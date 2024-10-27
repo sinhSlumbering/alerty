@@ -36,3 +36,5 @@ echo "Copying $DEFAULT_SOUND to $SHARE_PATH..."
 cp "$DEFAULT_SOUND" "$SHARE_PATH/"
 
 echo "Installation complete"
+
+show_creds
