@@ -27,7 +27,7 @@ To install Alerty and make it globally accessible, follow these steps:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/alerty.git
+   git clone https://github.com/sinhSlumbering/alerty.git
    cd alerty
    ```
 2. Make the install script executable:
