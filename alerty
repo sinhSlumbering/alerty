@@ -1,8 +1,27 @@
 #!/bin/bash
 
-default_track="/usr/local/share/alerty/alarm.mp3"
-default_message="BEEP BEEP BEEP MF"
+# Config file location
+config_file="$HOME/.config/alerty/config.conf"
+fallback_track="/usr/local/share/alerty/alarm.mp3"
 
+# Create config directory if it doesn't exist
+mkdir -p "$(dirname "$config_file")"
+
+# Set default values if config file doesn't exist
+if [[ -f "$config_file" ]]; then
+    source "$config_file"
+else
+    default_track="/usr/local/share/alerty/alarm.mp3"
+    default_message="BEEP BEEP BEEP MF"
+    echo "default_track=\"$default_track\"" > "$config_file"
+    echo "default_message=\"$default_message\"" >> "$config_file"
+fi
+
+# Load values from the config file or set defaults if not defined
+default_track="$(realpath "$default_track" 2>/dev/null || echo "$default_track")"
+default_message="${default_message:-BEEP BEEP BEEP MF}"
+
+# Initialize time and message variables
 hours=0
 minutes=0
 seconds=0
@@ -25,8 +44,9 @@ show_creds() {
 EOF
     exit 0
 }
+
 usage() {
-    echo "Usage: alert [OPTIONS]"
+    echo "Usage: alerty [OPTIONS]"
     echo "Set a timed alarm that plays a sound and sends a notification after the specified time."
     echo ""
     echo "Options:"
@@ -36,16 +56,17 @@ usage() {
     echo "  -f <track>            Specify a custom alarm sound file."
     echo "  -df <track>           Set a default alarm sound file (used if -f is not specified)."
     echo "  -sm, --set-message    Set a custom notification message (default: 'BEEP BEEP BEEP MF')."
+    echo "  -dm, --default-message Set a new default message for future alarms."
     echo "  --status              Check if an alarm is running."
     echo "  --stop                Stop the currently running alarm."
     echo "  --help                Display this help message."
     echo ""
     echo "Examples:"
-    echo "  alert -h 1 -m 30                    Set an alarm for 1 hour and 30 minutes with the default sound."
-    echo "  alert -s 45 -f alert.mp3            Set an alarm for 45 seconds with a custom sound."
-    echo "  alert -s 10 -sm 'Time's up!'        Set a 10-second alarm with a custom notification message."
-    echo "  alert --status                      Check if an alarm is currently running."
-    echo "  alert --stop                        Stop the active alarm."
+    echo "  alerty -h 1 -m 30                    Set an alarm for 1 hour and 30 minutes with the default sound."
+    echo "  alerty -s 45 -f alert.mp3            Set an alarm for 45 seconds with a custom sound."
+    echo "  alerty -s 10 -sm 'Time's up!'        Set a 10-second alarm with a custom notification message."
+    echo "  alerty --status                      Check if an alarm is currently running."
+    echo "  alerty --stop                        Stop the active alarm."
     exit 0
 }
 
@@ -54,9 +75,17 @@ while [[ $# -gt 0 ]]; do
         -h) hours="$2"; shift 2 ;;
         -m) minutes="$2"; shift 2 ;;
         -s) seconds="$2"; shift 2 ;;
-        -f) track="$2"; shift 2 ;;
-        -df) default_track="$2"; shift 2 ;;
+        -f) track="$2"; shift 2 ;;  
+        -df) default_track="$(realpath "$2" 2>/dev/null || echo "$2")"
+            if [[ ! -f "$default_track" ]]; then
+                echo "Error: Specified default track file not found at $default_track"
+                exit 1
+            fi
+            echo "default_track=\"$default_track\"" > "$config_file"
+            shift 2
+            ;;
         -sm|--set-message) message="$2"; shift 2 ;;
+        -dm|--default-message) default_message="$2"; echo "default_message=\"$default_message\"" >> "$config_file"; message=$default_message; shift 2 ;;
         --status) status=1; shift ;;
         --stop) stop=1; shift ;;
         --creds) show_creds;;
@@ -64,6 +93,15 @@ while [[ $# -gt 0 ]]; do
         *) usage ;;
     esac
 done
+
+# Ensure a track is set, prioritizing `-f` over `-df`
+# Set the alarm track, with fallback if file is missing
+alarm_track="${track:-$default_track}"
+if [[ ! -f "$alarm_track" ]]; then
+    echo "Warning: Specified alarm track not found. Using fallback track at $fallback_track."
+    alarm_track="$fallback_track"
+fi
+message="${message:-$default_message}"
 
 total_seconds=$(( (hours * 3600) + (minutes * 60) + seconds ))
 
@@ -100,8 +138,6 @@ if [ "$total_seconds" -le 0 ]; then
     echo "Please specify a valid time duration."
     usage
 fi
-
-alarm_track="${track:-$default_track}"
 
 {
     echo "Sleeping for $hours hours, $minutes minutes, $seconds seconds..."
