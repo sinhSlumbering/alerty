@@ -142,8 +142,7 @@ fi
 {
     echo "Sleeping for $hours hours, $minutes minutes, $seconds seconds..."
     sleep "$total_seconds"
-    echo "Playing alarm: $alarm_track"
-    ffplay -nodisp -autoexit "$alarm_track" &
+    ffplay -loglevel quiet -nostats -hide_banner -nodisp -autoexit "$alarm_track" &
     if command -v notify-send &> /dev/null; then
         notify-send "Alerty" "$message" -i dialog-information
     fi
