@@ -33,7 +33,7 @@ To install Alerty and make it globally accessible, follow these steps:
 2. Make the install script executable:
    ```bash
    chmod +x ./install.sh
-```
+    ```
 
 3. Run the installation script with `sudo`:
    ```bash
