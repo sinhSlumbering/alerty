@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Config file location
 config_file="$HOME/.config/alerty/config.conf"
 fallback_track="/usr/local/share/alerty/alarm.mp3"
@@ -31,10 +29,19 @@ seconds=0
 track=""
 message="$default_message"
 pid_file="/tmp/alarm_pid"  
-
+broadcast_enabled=false
+devices=()
 register_device_name=false
 register_device_id=false
 remove_device=false
+config_changed=false
+
+update_config() {
+    echo "default_track=\"$default_track\"" > "$config_file"
+    echo "default_message=\"$default_message\"" >> "$config_file"
+    echo "broadcast_enabled=$broadcast_enabled" >> "$config_file"
+    echo "devices=(${devices[@]})" >> "$config_file"
+}
 
 show_creds() {
     cat << "EOF"
@@ -93,30 +100,35 @@ while [[ $# -gt 0 ]]; do
                 echo "Error: Specified default track file not found at $default_track"
                 exit 1
             fi
-            echo "default_track=\"$default_track\"" > "$config_file"
+            config_changed=true
             shift 2
             ;;
         -sm|--set-message) message="$2"; shift 2 ;;
-        -dm|--default-message) default_message="$2"; echo "default_message=\"$default_message\"" >> "$config_file"; message=$default_message; shift 2 ;;
+        -dm|--default-message) default_message="$2"; 
+            config_changed=true;
+            message=$default_message; shift 2 ;;
         --enable-broadcast|-eb)
             broadcast_enabled=true
-            echo "broadcast_enabled=true" >> "$config_file"
+            config_changed=true
             shift ;;
         --disable-broadcast|-db)
             broadcast_enabled=false
-            echo "broadcast_enabled=false" >> "$config_file"
+            config_changed=true
             shift ;;
         --register-name|-rn) 
             register_device_name=true 
+            config_changed=true
             device_name="$2"
             shift 2 ;;
         --register-id|-ri) 
             register_device_id=true 
+            config_changed=true
             device_id="$2"
             shift 2 ;;
         --remove-device|-rd)
             remove_device=true
             device_remove="$2"
+            config_changed=true
             shift 2 ;;
         --status) status=1; shift ;;
         --stop) stop=1; shift ;;
@@ -126,28 +138,24 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Register device by name or ID
+
 if $register_device_name; then
     devices+=("$device_name")
-    echo "devices=(${devices[@]})" > "$config_file"
-    echo "Device name '$device_name' registered for alerts."
-    exit 0
 fi
 
 if $register_device_id; then
     devices+=("$device_id")
-    echo "devices=(${devices[@]})" > "$config_file"
-    echo "Device ID '$device_id' registered for alerts."
-    exit 0
 fi
 
-# Remove device by name or ID
 if $remove_device; then
     devices=("${devices[@]/$device_remove}")
-    echo "devices=(${devices[@]})" > "$config_file"
-    echo "Device '$device_remove' removed from alert list."
-    exit 0
 fi
+
+# Update config file if any settings were changed
+if $config_changed; then
+    update_config
+fi
+
 # Ensure a track is set, prioritizing `-f` over `-df`
 # Set the alarm track, with fallback if file is missing
 alarm_track="${track:-$default_track}"
