@@ -13,8 +13,11 @@ if [[ -f "$config_file" ]]; then
 else
     default_track="/usr/local/share/alerty/alarm.mp3"
     default_message="BEEP BEEP BEEP MF"
+    broadcast_enabled=false
     echo "default_track=\"$default_track\"" > "$config_file"
     echo "default_message=\"$default_message\"" >> "$config_file"
+    echo "broadcast_enabled=$broadcast_enabled" >> "$config_file"
+    echo "devices=()" >> "$config_file"
 fi
 
 # Load values from the config file or set defaults if not defined
@@ -28,6 +31,10 @@ seconds=0
 track=""
 message="$default_message"
 pid_file="/tmp/alarm_pid"  
+
+register_device_name=false
+register_device_id=false
+remove_device=false
 
 show_creds() {
     cat << "EOF"
@@ -50,16 +57,21 @@ usage() {
     echo "Set a timed alarm that plays a sound and sends a notification after the specified time."
     echo ""
     echo "Options:"
-    echo "  -h <hours>            Set hours for the alarm timer."
-    echo "  -m <minutes>          Set minutes for the alarm timer."
-    echo "  -s <seconds>          Set seconds for the alarm timer."
-    echo "  -f <track>            Specify a custom alarm sound file."
-    echo "  -df <track>           Set a default alarm sound file (used if -f is not specified)."
-    echo "  -sm, --set-message    Set a custom notification message (default: 'BEEP BEEP BEEP MF')."
-    echo "  -dm, --default-message Set a new default message for future alarms."
-    echo "  --status              Check if an alarm is running."
-    echo "  --stop                Stop the currently running alarm."
-    echo "  --help                Display this help message."
+    echo "  -h <hours>                  Set hours for the alarm timer."
+    echo "  -m <minutes>                Set minutes for the alarm timer."
+    echo "  -s <seconds>                Set seconds for the alarm timer."
+    echo "  -f <track>                  Specify a custom alarm sound file."
+    echo "  -df <track>                 Set a default alarm sound file (used if -f is not specified)."
+    echo "  -sm, --set-message          Set a custom notification message (default: 'BEEP BEEP BEEP MF')."
+    echo "  -dm, --default-message      Set a new default message for future alarms."
+    echo "  -eb, --enable-broadcast     Enables alert broadcast to registered devices"
+    echo "  -db, --disable-broadcast    Disable broadcast to registered devices"
+    echo "  -ri, --register-id          Register a device by device id."
+    echo "  -rn, --register-name        Register a device by device name"
+    echo "  -rd, --remove-device        Remove a device from Broadcast list"
+    echo "  --status                    Check if an alarm is running."
+    echo "  --stop                      Stop the currently running alarm."
+    echo "  --help                      Display this help message."
     echo ""
     echo "Examples:"
     echo "  alerty -h 1 -m 30                    Set an alarm for 1 hour and 30 minutes with the default sound."
@@ -86,6 +98,26 @@ while [[ $# -gt 0 ]]; do
             ;;
         -sm|--set-message) message="$2"; shift 2 ;;
         -dm|--default-message) default_message="$2"; echo "default_message=\"$default_message\"" >> "$config_file"; message=$default_message; shift 2 ;;
+        --enable-broadcast|-eb)
+            broadcast_enabled=true
+            echo "broadcast_enabled=true" >> "$config_file"
+            shift ;;
+        --disable-broadcast|-db)
+            broadcast_enabled=false
+            echo "broadcast_enabled=false" >> "$config_file"
+            shift ;;
+        --register-name|-rn) 
+            register_device_name=true 
+            device_name="$2"
+            shift 2 ;;
+        --register-id|-ri) 
+            register_device_id=true 
+            device_id="$2"
+            shift 2 ;;
+        --remove-device|-rd)
+            remove_device=true
+            device_remove="$2"
+            shift 2 ;;
         --status) status=1; shift ;;
         --stop) stop=1; shift ;;
         --creds) show_creds;;
@@ -94,6 +126,28 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Register device by name or ID
+if $register_device_name; then
+    devices+=("$device_name")
+    echo "devices=(${devices[@]})" > "$config_file"
+    echo "Device name '$device_name' registered for alerts."
+    exit 0
+fi
+
+if $register_device_id; then
+    devices+=("$device_id")
+    echo "devices=(${devices[@]})" > "$config_file"
+    echo "Device ID '$device_id' registered for alerts."
+    exit 0
+fi
+
+# Remove device by name or ID
+if $remove_device; then
+    devices=("${devices[@]/$device_remove}")
+    echo "devices=(${devices[@]})" > "$config_file"
+    echo "Device '$device_remove' removed from alert list."
+    exit 0
+fi
 # Ensure a track is set, prioritizing `-f` over `-df`
 # Set the alarm track, with fallback if file is missing
 alarm_track="${track:-$default_track}"
@@ -145,6 +199,12 @@ fi
     ffplay -loglevel quiet -nostats -hide_banner -nodisp -autoexit "$alarm_track" &
     if command -v notify-send &> /dev/null; then
         notify-send "Alerty" "$message" -i dialog-information
+    fi
+    # KDE Connect Notification Broadcast if enabled
+    if [[ "$broadcast_enabled" == true ]]; then
+        for device in "${devices[@]}"; do
+            kdeconnect-cli --ping-msg "$message" -n "$device" || kdeconnect-cli --ping-msg "$message" -d "$device"
+        done
     fi
 } &
 

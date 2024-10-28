@@ -20,6 +20,7 @@
 - Send a desktop notification when the alarm triggers (Linux `notify-send` required).
 - Run alarms as background processes so that the terminal remains usable.
 - Optional message customization for the notification pop-up.
+- Broadcast alerts to other devices using [kdeconnect](https://kdeconnect.kde.org/).
 
 ## Installation
 
@@ -59,6 +60,12 @@ Options:
   -f <track>            Specify a custom alarm sound file.
   -df <track>           Set a default alarm sound file (used if -f is not specified).
   -sm, --set-message    Set a custom notification message.
+  -dm, --default-message      Set a new default message for future alarms.
+  -eb, --enable-broadcast     Enables alert broadcast to registered devices
+  -db, --disable-broadcast    Disable broadcast to registered devices
+  -ri, --register-id          Register a device by device id.
+  -rn, --register-name        Register a device by device name
+  -rd, --remove-device        Remove a device from Broadcast list
   --status              Check if an alarm is running.
   --stop                Stop the currently running alarm.
   --help                Display this help message.
@@ -76,18 +83,55 @@ Options:
   alerty -s 10 -sm "Time's up!"
   ```
 
+#### Broadcast notifications
+- Assuming you have kdeconnect installed, reachable devices can be found with:
+  ```bash
+  kdeconnect-cli -l
+  ```
+- This should output something like this:
+```bash
+  -<name>: <id> (paired and reachable)
+  1 device found
+```
+- We can register this device with either the name or the id. 
+  ```bash
+  alerty -rn <name>
+  alerty --register-name <name>
+  alerty -ri <id>
+  alerty -register-id <id>
+  ```
+- Finally we can enable/disable broadcasts by:
+  ```bash
+  alerty --enable-broadcast
+  alerty -eb
+  alerty --disable-broadcast
+  alerty -db
+  ```
 
 ## Requirements
 
 - **Linux OS** (tested on arch btw)
 - `ffmpeg` :
   ```bash
+  # Arch Derivatives
+  sudo pacman -S ffmpeg
+  # For Debian based distros
   sudo apt install ffmpeg
   ```
   
 - **`notify-send`**: For desktop notifications. Install via `libnotify-bin` package:
   ```bash
+  # Arch derivatives
+  sudo pacman -S libnotify-bin
+  # For Debian based distros 
   sudo apt install libnotify-bin
+  ```
+- `kdeconnect` cli on your PC and on your target device for message Broadcast.
+  ```bash
+  # Arch derivatives
+  sudo pacman -S kdeconnect
+  # For Debian based distros 
+  sudo apt install kdeconnect
   ```
 
 ## Uninstallation
