@@ -11,7 +11,9 @@
 ```
 
 
-`Alerty` lets you jumpscare yourself using only the terminal. Oh and ig it can be used to time stuff as well. Shoutout to all my pomodoro homies.
+`Alerty` lets you jumpscare yourself using only the terminal. Oh and ig it can be used to time stuff as well. Shoutout to all my pomodoro homies. (Now it annoys you on the phone as well!!)
+
+---
 
 ## Features
 
@@ -24,7 +26,7 @@
 
 ## Installation
 
-To install Alerty and make it globally accessible, follow these steps:
+To install `Alerty` and make it globally accessible, follow these steps:
 
 1. Clone the repository:
    ```bash
@@ -84,7 +86,7 @@ Options:
   ```
 
 #### Broadcast notifications
-- Assuming you have kdeconnect installed, reachable devices can be found with:
+- Assuming you have `kdeconnect` installed, reachable devices can be found with:
   ```bash
   kdeconnect-cli -l
   ```
@@ -110,7 +112,7 @@ Options:
 
 ## Requirements
 
-- **Linux OS** (tested on arch btw)
+- **Linux** (tested on arch btw)
 - `ffmpeg` :
   ```bash
   # Arch Derivatives
@@ -122,11 +124,11 @@ Options:
 - **`notify-send`**: For desktop notifications. Install via `libnotify-bin` package:
   ```bash
   # Arch derivatives
-  sudo pacman -S libnotify-bin
+  sudo pacman -S libnotify
   # For Debian based distros 
   sudo apt install libnotify-bin
   ```
-- `kdeconnect` cli on your PC and on your target device for message Broadcast.
+- `kdeconnect-cli`  on your PC and on your target device for message Broadcast.
   ```bash
   # Arch derivatives
   sudo pacman -S kdeconnect
@@ -136,7 +138,13 @@ Options:
 
 ## Uninstallation
 
-To nuke `alerty` 
+To nuke `alerty`  use the `uninstall.sh` script
+```bash
+  chmod +x uninstall.sh
+  ./uninstall.sh
+```
+
+Or just do it manually with:
 
 ```bash
 sudo rm /usr/local/bin/alerty

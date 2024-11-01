@@ -2,12 +2,21 @@
 config_file="$HOME/.config/alerty/config.conf"
 fallback_track="/usr/local/share/alerty/alarm.mp3"
 
+broadcast_enabled=false
+devices=()
+register_device_name=false
+register_device_id=false
+remove_device=false
+config_changed=false
+
+
 # Create config directory if it doesn't exist
 mkdir -p "$(dirname "$config_file")"
 
 # Set default values if config file doesn't exist
 if [[ -f "$config_file" ]]; then
     source "$config_file"
+    declare -a devices=("${devices[@]}")
 else
     default_track="/usr/local/share/alerty/alarm.mp3"
     default_message="BEEP BEEP BEEP MF"
@@ -29,18 +38,12 @@ seconds=0
 track=""
 message="$default_message"
 pid_file="/tmp/alarm_pid"  
-broadcast_enabled=false
-devices=()
-register_device_name=false
-register_device_id=false
-remove_device=false
-config_changed=false
 
 update_config() {
     echo "default_track=\"$default_track\"" > "$config_file"
     echo "default_message=\"$default_message\"" >> "$config_file"
     echo "broadcast_enabled=$broadcast_enabled" >> "$config_file"
-    echo "devices=(${devices[@]})" >> "$config_file"
+    echo "devices=($(printf '"%s" ' "${devices[@]}"))" >> "$config_file"
 }
 
 show_creds() {
