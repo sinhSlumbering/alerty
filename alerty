@@ -205,7 +205,15 @@ if [ "$total_seconds" -le 0 ]; then
 fi
 
 {
-    echo "Sleeping for $hours hours, $minutes minutes, $seconds seconds..."
+    hour_label="hour"
+    minute_label="minute"
+    second_label="second"
+
+    [[ $hours -ne 1 ]] && hour_label="hours"
+    [[ $minutes -ne 1 ]] && minute_label="minutes"
+    [[ $seconds -ne 1 ]] && second_label="seconds"
+
+    echo "Sleeping for $hours $hour_label, $minutes $minute_label, $seconds $second_label..."
     sleep "$total_seconds"
     ffplay -loglevel quiet -nostats -hide_banner -nodisp -autoexit "$alarm_track" &
     if command -v notify-send &> /dev/null; then
